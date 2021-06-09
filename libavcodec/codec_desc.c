@@ -1856,6 +1856,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Digital Pictures SGA Video"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_R12B,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "r12b",
+        .long_name = NULL_IF_CONFIG_SMALL("Uncompressed RGB 12-bit 8px in 36B"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* various PCM "codecs" */
     {
