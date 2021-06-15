@@ -266,6 +266,7 @@ extern const AVCodec ff_qtrle_encoder;
 extern const AVCodec ff_qtrle_decoder;
 extern const AVCodec ff_r10k_encoder;
 extern const AVCodec ff_r10k_decoder;
+extern const AVCodec ff_r12b_decoder;
 extern const AVCodec ff_r210_encoder;
 extern const AVCodec ff_r210_decoder;
 extern const AVCodec ff_rasc_decoder;
