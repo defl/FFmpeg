@@ -71,7 +71,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt             = AV_PIX_FMT_YUV422P10;
     avctx->bits_per_raw_sample = 10;
 
-    s->thread_count  = av_clip(avctx->thread_count, 1, avctx->height/4);
+    s->thread_count  = (avctx->thread_count < 0) ? 0 : av_clip(avctx->thread_count, 1, avctx->height/4);
     s->aligned_input = 0;
     ff_v210dec_init(s);
 
@@ -85,8 +85,9 @@ static int v210_decode_slice(AVCodecContext *avctx, void *arg, int jobnr, int th
     ThreadData *td = arg;
     AVFrame *frame = td->frame;
     int stride = td->stride;
-    int slice_start = (avctx->height *  jobnr) / s->thread_count;
-    int slice_end = (avctx->height * (jobnr+1)) / s->thread_count;
+    int thread_count = (s->thread_count <= 0) ? 1 : s->thread_count;
+    int slice_start = (avctx->height *  jobnr) / thread_count;
+    int slice_end = (avctx->height * (jobnr+1)) / thread_count;
     uint8_t *psrc = td->buf + stride * slice_start;
     uint16_t *y, *u, *v;
 
@@ -186,7 +187,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     td.buf = (uint8_t*)psrc;
     td.frame = pic;
-    avctx->execute2(avctx, v210_decode_slice, &td, NULL, s->thread_count);
+    
+    if (s->thread_count > 0)
+        avctx->execute2(avctx, v210_decode_slice, &td, NULL, s->thread_count);
+    else
+        v210_decode_slice(avctx, (void *)&td, 0, 0);
 
     if (avctx->field_order > AV_FIELD_PROGRESSIVE) {
         /* we have interlaced material flagged in container */
