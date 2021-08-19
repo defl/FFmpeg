@@ -34,7 +34,7 @@
 #include "threshold.h"
 
 #define OFFSET(x) offsetof(ThresholdContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption threshold_options[] = {
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,  {.i64=15}, 0, 15, FLAGS},
@@ -67,7 +67,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 typedef struct ThreadData {
@@ -146,8 +146,8 @@ static int process_frame(FFFrameSync *fs)
         td.threshold = threshold;
         td.min = min;
         td.max = max;
-        ctx->internal->execute(ctx, filter_slice, &td, NULL,
-                               FFMIN(s->height[2], ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_slice, &td, NULL,
+                          FFMIN(s->height[2], ff_filter_get_nb_threads(ctx)));
     }
 
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
@@ -365,4 +365,5 @@ const AVFilter ff_vf_threshold = {
     .inputs        = inputs,
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };

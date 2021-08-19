@@ -17,8 +17,6 @@
  */
 #include <string.h>
 
-#include "libavutil/avassert.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
@@ -259,7 +257,7 @@ static const AVFilterPad transpose_vaapi_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = &transpose_vaapi_filter_frame,
-        .get_video_buffer = get_video_buffer,
+        .get_buffer.video = get_video_buffer,
         .config_props = &ff_vaapi_vpp_config_input,
     },
     { NULL }

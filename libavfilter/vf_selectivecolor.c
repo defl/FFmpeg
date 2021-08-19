@@ -297,10 +297,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static inline int comp_adjust(int scale, float value, float adjust, float k, int correction_method)
@@ -444,8 +441,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in = in;
     td.out = out;
-    ctx->internal->execute(ctx, funcs[s->is_16bit][direct][s->correction_method],
-                           &td, NULL, FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, funcs[s->is_16bit][direct][s->correction_method],
+                      &td, NULL, FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (!direct)
         av_frame_free(&in);

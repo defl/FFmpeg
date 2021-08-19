@@ -79,7 +79,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static void threshold8(const uint8_t *src, const uint8_t *ref, uint8_t *dst, int threshold, int w)
@@ -191,8 +191,8 @@ static int process_frame(FFFrameSync *fs)
         td.ref = ref;
         td.dst = out;
 
-        ctx->internal->execute(ctx, threshold_slice, &td, NULL, FFMIN(s->planeheight[2],
-                                                                ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, threshold_slice, &td, NULL,
+                          FFMIN(s->planeheight[2], ff_filter_get_nb_threads(ctx)));
     }
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 

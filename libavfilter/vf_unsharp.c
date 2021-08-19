@@ -164,7 +164,8 @@ static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         td.height = plane_h[i];
         td.dst_stride = out->linesize[i];
         td.src_stride = in->linesize[i];
-        ctx->internal->execute(ctx, s->unsharp_slice, &td, NULL, FFMIN(plane_h[i], s->nb_threads));
+        ff_filter_execute(ctx, s->unsharp_slice, &td, NULL,
+                          FFMIN(plane_h[i], s->nb_threads));
     }
     return 0;
 }
@@ -208,10 +209,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const char *effect_type, int width)

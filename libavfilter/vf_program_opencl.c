@@ -287,7 +287,7 @@ static av_cold int program_opencl_init(AVFilterContext *avctx)
 
             input.config_props = &ff_opencl_filter_config_input;
 
-            err = ff_insert_inpad(avctx, i, &input);
+            err = ff_append_inpad(avctx, &input);
             if (err < 0) {
                 av_freep(&input.name);
                 return err;
@@ -367,6 +367,7 @@ const AVFilter ff_vf_program_opencl = {
     .description    = NULL_IF_CONFIG_SMALL("Filter video using an OpenCL program"),
     .priv_size      = sizeof(ProgramOpenCLContext),
     .priv_class     = &program_opencl_class,
+    .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
     .preinit        = &program_opencl_framesync_preinit,
     .init           = &program_opencl_init,
     .uninit         = &program_opencl_uninit,

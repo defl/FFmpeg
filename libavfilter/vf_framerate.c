@@ -146,7 +146,8 @@ static int blend_frames(AVFilterContext *ctx, int interpolate)
         av_frame_copy_props(s->work, s->f0);
 
         ff_dlog(ctx, "blend_frames() INTERPOLATE to create work frame\n");
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(FFMAX(1, outlink->h >> 2), ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_slice, &td, NULL,
+                          FFMIN(FFMAX(1, outlink->h >> 2), ff_filter_get_nb_threads(ctx)));
         return 1;
     }
     return 0;
@@ -231,10 +232,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 #define BLEND_FRAME_FUNC(nbits)                         \

@@ -303,8 +303,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     ColorContrastContext *s = ctx->priv;
     int res;
 
-    if (res = ctx->internal->execute(ctx, s->do_slice, frame, NULL,
-                                       FFMIN(frame->height, ff_filter_get_nb_threads(ctx))))
+    if (res = ff_filter_execute(ctx, s->do_slice, frame, NULL,
+                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx))))
         return res;
 
     return ff_filter_frame(ctx->outputs[0], frame);
@@ -327,13 +327,7 @@ static av_cold int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *formats = NULL;
-
-    formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 static av_cold int config_input(AVFilterLink *inlink)
@@ -364,7 +358,7 @@ static const AVFilterPad colorcontrast_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
-        .needs_writable = 1,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame   = filter_frame,
         .config_props   = config_input,
     },

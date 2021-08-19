@@ -86,10 +86,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -121,7 +118,7 @@ static av_cold int init(AVFilterContext *ctx)
         if (!pad.name)
             return AVERROR(ENOMEM);
 
-        if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0) {
+        if ((ret = ff_append_inpad(ctx, &pad)) < 0) {
             av_freep(&pad.name);
             return ret;
         }
@@ -256,7 +253,8 @@ static int process_frame(FFFrameSync *fs)
     if (!ctx->is_disabled) {
         td.in = in;
         td.out = out;
-        ctx->internal->execute(ctx, s->median_frames, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, s->median_frames, &td, NULL,
+                          FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
     }
 
     return ff_filter_frame(outlink, out);
@@ -443,7 +441,8 @@ static int tmedian_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.out = out;
     td.in = s->frames;
-    ctx->internal->execute(ctx, s->median_frames, &td, NULL, FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->median_frames, &td, NULL,
+                      FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, out);
 }

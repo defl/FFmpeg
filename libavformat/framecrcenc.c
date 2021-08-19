@@ -22,7 +22,12 @@
 #include <inttypes.h>
 
 #include "libavutil/adler32.h"
-#include "libavcodec/avcodec.h"
+#include "libavutil/avstring.h"
+
+#include "libavcodec/codec_id.h"
+#include "libavcodec/codec_par.h"
+#include "libavcodec/packet.h"
+
 #include "avformat.h"
 #include "internal.h"
 

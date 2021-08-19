@@ -45,31 +45,19 @@ typedef struct ADenormContext {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    AVFilterFormats *formats = NULL;
-    AVFilterChannelLayouts *layouts = NULL;
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
-    int ret;
-
-    formats = ff_make_format_list(sample_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_formats(ctx, formats);
+    int ret = ff_set_common_formats_from_list(ctx, sample_fmts);
     if (ret < 0)
         return ret;
 
-    layouts = ff_all_channel_counts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
-
-    ret = ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_all_channel_counts(ctx);
     if (ret < 0)
         return ret;
 
-    formats = ff_all_samplerates();
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_all_samplerates(ctx);
 }
 
 static void dc_denorm_fltp(AVFilterContext *ctx, void *dstp,
@@ -262,8 +250,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     s->level = exp(s->level_db / 20. * M_LN10);
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, filter_channels, &td, NULL, FFMIN(inlink->channels,
-                                                            ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, filter_channels, &td, NULL,
+                      FFMIN(inlink->channels, ff_filter_get_nb_threads(ctx)));
 
     s->in_samples += in->nb_samples;
 

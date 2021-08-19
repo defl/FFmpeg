@@ -196,9 +196,12 @@ static void gaussianiir2d(AVFilterContext *ctx, int plane)
 
     td.width = width;
     td.height = height;
-    ctx->internal->execute(ctx, filter_horizontally, &td, NULL, FFMIN(height, nb_threads));
-    ctx->internal->execute(ctx, filter_vertically, &td, NULL, FFMIN(width, nb_threads));
-    ctx->internal->execute(ctx, filter_postscale, &td, NULL, FFMIN(width * height, nb_threads));
+    ff_filter_execute(ctx, filter_horizontally, &td,
+                      NULL, FFMIN(height, nb_threads));
+    ff_filter_execute(ctx, filter_vertically, &td,
+                      NULL, FFMIN(width, nb_threads));
+    ff_filter_execute(ctx, filter_postscale, &td,
+                      NULL, FFMIN(width * height, nb_threads));
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -227,7 +230,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 void ff_gblur_init(GBlurContext *s)

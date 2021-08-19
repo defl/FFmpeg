@@ -53,6 +53,7 @@ OBJS-$(CONFIG_AFFTFILT_FILTER)               += af_afftfilt.o
 OBJS-$(CONFIG_AFIR_FILTER)                   += af_afir.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AFREQSHIFT_FILTER)             += af_afreqshift.o
+OBJS-$(CONFIG_AFWTDN_FILTER)                 += af_afwtdn.o
 OBJS-$(CONFIG_AGATE_FILTER)                  += af_agate.o
 OBJS-$(CONFIG_AIIR_FILTER)                   += af_aiir.o
 OBJS-$(CONFIG_AINTEGRAL_FILTER)              += af_aderivative.o
@@ -77,6 +78,7 @@ OBJS-$(CONFIG_AREALTIME_FILTER)              += f_realtime.o
 OBJS-$(CONFIG_ARESAMPLE_FILTER)              += af_aresample.o
 OBJS-$(CONFIG_AREVERSE_FILTER)               += f_reverse.o
 OBJS-$(CONFIG_ARNNDN_FILTER)                 += af_arnndn.o
+OBJS-$(CONFIG_ASEGMENT_FILTER)               += f_segment.o
 OBJS-$(CONFIG_ASELECT_FILTER)                += f_select.o
 OBJS-$(CONFIG_ASENDCMD_FILTER)               += f_sendcmd.o
 OBJS-$(CONFIG_ASETNSAMPLES_FILTER)           += af_asetnsamples.o
@@ -349,7 +351,8 @@ OBJS-$(CONFIG_OCR_FILTER)                    += vf_ocr.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
 OBJS-$(CONFIG_OSCILLOSCOPE_FILTER)           += vf_datascope.o
 OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o framesync.o
-OBJS-$(CONFIG_OVERLAY_CUDA_FILTER)           += vf_overlay_cuda.o framesync.o vf_overlay_cuda.ptx.o
+OBJS-$(CONFIG_OVERLAY_CUDA_FILTER)           += vf_overlay_cuda.o framesync.o vf_overlay_cuda.ptx.o \
+                                                cuda/load_helper.o
 OBJS-$(CONFIG_OVERLAY_OPENCL_FILTER)         += vf_overlay_opencl.o opencl.o \
                                                 opencl/overlay.o framesync.o
 OBJS-$(CONFIG_OVERLAY_QSV_FILTER)            += vf_overlay_qsv.o framesync.o
@@ -394,7 +397,7 @@ OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SAB_FILTER)                    += vf_sab.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o scale_eval.o
 OBJS-$(CONFIG_SCALE_CUDA_FILTER)             += vf_scale_cuda.o scale_eval.o \
-                                                vf_scale_cuda.ptx.o vf_scale_cuda_bicubic.ptx.o
+                                                vf_scale_cuda.ptx.o cuda/load_helper.o
 OBJS-$(CONFIG_SCALE_NPP_FILTER)              += vf_scale_npp.o scale_eval.o
 OBJS-$(CONFIG_SCALE_QSV_FILTER)              += vf_scale_qsv.o
 OBJS-$(CONFIG_SCALE_VAAPI_FILTER)            += vf_scale_vaapi.o scale_eval.o vaapi_vpp.o
@@ -402,6 +405,7 @@ OBJS-$(CONFIG_SCALE_VULKAN_FILTER)           += vf_scale_vulkan.o vulkan.o
 OBJS-$(CONFIG_SCALE2REF_FILTER)              += vf_scale.o scale_eval.o
 OBJS-$(CONFIG_SCDET_FILTER)                  += vf_scdet.o
 OBJS-$(CONFIG_SCROLL_FILTER)                 += vf_scroll.o
+OBJS-$(CONFIG_SEGMENT_FILTER)                += f_segment.o
 OBJS-$(CONFIG_SELECT_FILTER)                 += f_select.o
 OBJS-$(CONFIG_SELECTIVECOLOR_FILTER)         += vf_selectivecolor.o
 OBJS-$(CONFIG_SENDCMD_FILTER)                += f_sendcmd.o
@@ -442,7 +446,8 @@ OBJS-$(CONFIG_TELECINE_FILTER)               += vf_telecine.o
 OBJS-$(CONFIG_THISTOGRAM_FILTER)             += vf_histogram.o
 OBJS-$(CONFIG_THRESHOLD_FILTER)              += vf_threshold.o framesync.o
 OBJS-$(CONFIG_THUMBNAIL_FILTER)              += vf_thumbnail.o
-OBJS-$(CONFIG_THUMBNAIL_CUDA_FILTER)         += vf_thumbnail_cuda.o vf_thumbnail_cuda.ptx.o
+OBJS-$(CONFIG_THUMBNAIL_CUDA_FILTER)         += vf_thumbnail_cuda.o vf_thumbnail_cuda.ptx.o \
+                                                cuda/load_helper.o
 OBJS-$(CONFIG_TILE_FILTER)                   += vf_tile.o
 OBJS-$(CONFIG_TINTERLACE_FILTER)             += vf_tinterlace.o
 OBJS-$(CONFIG_TLUT2_FILTER)                  += vf_lut2.o framesync.o
@@ -488,7 +493,7 @@ OBJS-$(CONFIG_XMEDIAN_FILTER)                += vf_xmedian.o framesync.o
 OBJS-$(CONFIG_XSTACK_FILTER)                 += vf_stack.o framesync.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o yadif_common.o
 OBJS-$(CONFIG_YADIF_CUDA_FILTER)             += vf_yadif_cuda.o vf_yadif_cuda.ptx.o \
-                                                yadif_common.o
+                                                yadif_common.o cuda/load_helper.o
 OBJS-$(CONFIG_YAEPBLUR_FILTER)               += vf_yaepblur.o
 OBJS-$(CONFIG_ZMQ_FILTER)                    += f_zmq.o
 OBJS-$(CONFIG_ZOOMPAN_FILTER)                += vf_zoompan.o

@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -328,16 +329,6 @@ static int init_segment_types(AVFormatContext *s)
     }
 
     return 0;
-}
-
-static int check_file_extension(const char *filename, const char *extension) {
-    char *dot;
-    if (!filename || !extension)
-        return -1;
-    dot = strrchr(filename, '.');
-    if (dot && !strcmp(dot + 1, extension))
-        return 0;
-    return -1;
 }
 
 static void set_vp9_codec_str(AVFormatContext *s, AVCodecParameters *par,
@@ -1312,7 +1303,6 @@ static int write_manifest(AVFormatContext *s, int final)
                 AVStream *st = s->streams[i];
                 OutputStream *os = &c->streams[i];
                 char *agroup = NULL;
-                char *codec_str_ptr = NULL;
                 int stream_bitrate = os->muxer_overhead;
                 if (os->bit_rate > 0)
                     stream_bitrate += os->bit_rate;
@@ -1331,13 +1321,10 @@ static int write_manifest(AVFormatContext *s, int final)
                     av_strlcat(codec_str, ",", sizeof(codec_str));
                     av_strlcat(codec_str, audio_codec_str, sizeof(codec_str));
                 }
-                if (st->codecpar->codec_id != AV_CODEC_ID_HEVC) {
-                    codec_str_ptr = codec_str;
-                }
                 get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
                 ff_hls_write_stream_info(st, c->m3u8_out, stream_bitrate,
                                          playlist_file, agroup,
-                                         codec_str_ptr, NULL, NULL);
+                                         codec_str, NULL, NULL);
             }
 
         } else {
@@ -1534,9 +1521,9 @@ static int dash_init(AVFormatContext *s)
         }
 
         if (os->segment_type == SEGMENT_TYPE_WEBM) {
-            if ((!c->single_file && check_file_extension(os->init_seg_name, os->format_name) != 0) ||
-                (!c->single_file && check_file_extension(os->media_seg_name, os->format_name) != 0) ||
-                (c->single_file && check_file_extension(os->single_file_name, os->format_name) != 0)) {
+            if ((!c->single_file && !av_match_ext(os->init_seg_name, os->format_name))  ||
+                (!c->single_file && !av_match_ext(os->media_seg_name, os->format_name)) ||
+                ( c->single_file && !av_match_ext(os->single_file_name, os->format_name))) {
                 av_log(s, AV_LOG_WARNING,
                        "One or many segment file names doesn't end with .webm. "
                        "Override -init_seg_name and/or -media_seg_name and/or "
@@ -2044,7 +2031,10 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
 
             c->nr_of_streams_flushed = 0;
         }
-        ret = write_manifest(s, final);
+        // In streaming mode the manifest is written at the beginning
+        // of the segment instead
+        if (!c->streaming || final)
+            ret = write_manifest(s, final);
     }
     return ret;
 }
@@ -2271,6 +2261,14 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) {
             return handle_io_open_error(s, ret, os->temp_path);
         }
+
+        // in streaming mode, the segments are available for playing
+        // before fully written but the manifest is needed so that
+        // clients and discover the segment filenames.
+        if (c->streaming) {
+            write_manifest(s, 0);
+        }
+
         if (c->lhls) {
             char *prefetch_url = use_rename ? NULL : os->filename;
             write_hls_media_playlist(os, s, pkt->stream_index, 0, prefetch_url);

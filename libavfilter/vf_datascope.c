@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -371,7 +370,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     td.in = in; td.out = out, td.yoff = xmaxlen, td.xoff = ymaxlen, td.PP = PP;
-    ctx->internal->execute(ctx, s->filter, &td, NULL, FFMIN(ff_filter_get_nb_threads(ctx), FFMAX(outlink->w / 20, 1)));
+    ff_filter_execute(ctx, s->filter, &td, NULL,
+                      FFMIN(ff_filter_get_nb_threads(ctx), FFMAX(outlink->w / 20, 1)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -1130,9 +1130,9 @@ static const AVFilterPad oscilloscope_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame   = oscilloscope_filter_frame,
         .config_props   = oscilloscope_config_input,
-        .needs_writable = 1,
     },
     { NULL }
 };

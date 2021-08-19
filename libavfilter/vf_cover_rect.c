@@ -22,7 +22,6 @@
  * @todo switch to dualinput
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "internal.h"
@@ -63,7 +62,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int config_input(AVFilterLink *inlink)

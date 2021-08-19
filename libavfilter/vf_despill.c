@@ -94,10 +94,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *ctx = link->dst;
     int ret;
 
-    if (ret = av_frame_make_writable(frame))
-        return ret;
-
-    if (ret = ctx->internal->execute(ctx, do_despill_slice, frame, NULL, FFMIN(frame->height, ff_filter_get_nb_threads(ctx))))
+    if (ret = ff_filter_execute(ctx, do_despill_slice, frame, NULL,
+                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx))))
         return ret;
 
     return ff_filter_frame(ctx->outputs[0], frame);
@@ -125,19 +123,15 @@ static av_cold int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_BGRA,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *formats = NULL;
 
-    formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 static const AVFilterPad despill_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
+        .flags        = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame = filter_frame,
     },
     { NULL }

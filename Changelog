@@ -8,6 +8,10 @@ version <next>:
 - Argonaut Games CVG demuxer
 - Argonaut Games CVG muxer
 - r12b decoder
+- Concatf protocol
+- afwtdn audio filter
+- audio and video segment filters
+- Apple Graphics (SMC) encoder
 
 
 version 4.4:

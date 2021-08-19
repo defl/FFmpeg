@@ -126,8 +126,9 @@ static void draw_region(AVFrame *frame, DrawBoxContext *ctx, int left, int top, 
         for (y = top; y < down; y++) {
             ASSIGN_THREE_CHANNELS
             if (ctx->invert_color) {
-                if (pixel_belongs_to_region(ctx, x, y))
-                    row[0][x] = 0xff - row[0][x];
+                for (x = left; x < right; x++)
+                    if (pixel_belongs_to_region(ctx, x, y))
+                        row[0][x] = 0xff - row[0][x];
             } else {
                 for (x = left; x < right; x++) {
                     double alpha = (double)ctx->yuv_color[A] / 255;
@@ -192,10 +193,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -386,9 +384,9 @@ static const AVFilterPad drawbox_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .config_props   = config_input,
         .filter_frame   = filter_frame,
-        .needs_writable = 1,
     },
     { NULL }
 };
@@ -470,9 +468,9 @@ static const AVFilterPad drawgrid_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .config_props   = config_input,
         .filter_frame   = drawgrid_filter_frame,
-        .needs_writable = 1,
     },
     { NULL }
 };

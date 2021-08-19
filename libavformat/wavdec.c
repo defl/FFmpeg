@@ -241,8 +241,8 @@ static inline int wav_parse_bext_string(AVFormatContext *s, const char *key,
     int ret;
 
     av_assert0(length < sizeof(temp));
-    if ((ret = avio_read(s->pb, temp, length)) != length)
-        return ret < 0 ? ret : AVERROR_INVALIDDATA;
+    if ((ret = ffio_read_size(s->pb, temp, length)) < 0)
+        return ret;
 
     temp[length] = 0;
 
@@ -311,9 +311,9 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
         if (!(coding_history = av_malloc(size + 1)))
             return AVERROR(ENOMEM);
 
-        if ((ret = avio_read(s->pb, coding_history, size)) != size) {
+        if ((ret = ffio_read_size(s->pb, coding_history, size)) < 0) {
             av_free(coding_history);
-            return ret < 0 ? ret : AVERROR_INVALIDDATA;
+            return ret;
         }
 
         coding_history[size] = 0;
@@ -702,8 +702,8 @@ static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
         int64_t audio_dts, video_dts;
         AVStream *vst = wav->vst;
 smv_retry:
-        audio_dts = (int32_t)st->cur_dts;
-        video_dts = (int32_t)vst->cur_dts;
+        audio_dts = (int32_t)st->internal->cur_dts;
+        video_dts = (int32_t)vst->internal->cur_dts;
 
         if (audio_dts != AV_NOPTS_VALUE && video_dts != AV_NOPTS_VALUE) {
             /*We always return a video frame first to get the pixel format first*/
@@ -718,7 +718,7 @@ smv_retry:
         if (wav->smv_last_stream) {
             uint64_t old_pos = avio_tell(s->pb);
             uint64_t new_pos = wav->smv_data_ofs +
-                wav->smv_block * wav->smv_block_size;
+                wav->smv_block * (int64_t)wav->smv_block_size;
             if (avio_seek(s->pb, new_pos, SEEK_SET) < 0) {
                 ret = AVERROR_EOF;
                 goto smv_out;

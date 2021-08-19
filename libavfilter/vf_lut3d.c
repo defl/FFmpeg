@@ -1166,10 +1166,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -1234,7 +1231,8 @@ static AVFrame *apply_lut(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, lut3d->interp, &td, NULL,
+                      FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);
@@ -2232,7 +2230,8 @@ static AVFrame *apply_1d_lut(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, lut1d->interp, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, lut1d->interp, &td, NULL,
+                      FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

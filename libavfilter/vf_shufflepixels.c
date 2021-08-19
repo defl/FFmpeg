@@ -68,10 +68,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static void make_horizontal_map(AVFilterContext *ctx)
@@ -377,6 +374,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ThreadData td;
     int ret;
 
+    if (!out) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     ret = av_frame_copy_props(out, in);
     if (ret < 0) {
         av_frame_free(&out);
@@ -385,7 +387,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.out = out;
     td.in = in;
-    ctx->internal->execute(ctx, s->shuffle_pixels, &td, NULL, FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->shuffle_pixels, &td, NULL,
+                      FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(ctx->outputs[0], out);

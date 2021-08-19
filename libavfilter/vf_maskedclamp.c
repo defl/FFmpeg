@@ -84,7 +84,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int maskedclamp_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
@@ -159,8 +159,8 @@ static int process_frame(FFFrameSync *fs)
         td.m = bright;
         td.d = out;
 
-        ctx->internal->execute(ctx, maskedclamp_slice, &td, NULL, FFMIN(s->height[0],
-                                                                        ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, maskedclamp_slice, &td, NULL,
+                          FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
     }
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 

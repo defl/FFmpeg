@@ -28,7 +28,9 @@
 #include "libavutil/avassert.h"
 #include "libavutil/display.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/film_grain_params.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/timecode.h"
 #include "internal.h"
 #include "cabac.h"
 #include "cabac_functions.h"
@@ -43,7 +45,6 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "mpegutils.h"
-#include "mpegvideo.h"
 #include "rectangle.h"
 #include "thread.h"
 
@@ -378,19 +379,15 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->droppable            = h1->droppable;
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
-        ff_h264_unref_picture(h, &h->DPB[i]);
-        if (h1->DPB[i].f->buf[0] &&
-            (ret = ff_h264_ref_picture(h, &h->DPB[i], &h1->DPB[i])) < 0)
+        ret = ff_h264_replace_picture(h, &h->DPB[i], &h1->DPB[i]);
+        if (ret < 0)
             return ret;
     }
 
     h->cur_pic_ptr = REBASE_PICTURE(h1->cur_pic_ptr, h, h1);
-    ff_h264_unref_picture(h, &h->cur_pic);
-    if (h1->cur_pic.f->buf[0]) {
-        ret = ff_h264_ref_picture(h, &h->cur_pic, &h1->cur_pic);
-        if (ret < 0)
-            return ret;
-    }
+    ret = ff_h264_replace_picture(h, &h->cur_pic, &h1->cur_pic);
+    if (ret < 0)
+        return ret;
 
     h->enable_er       = h1->enable_er;
     h->workaround_bugs = h1->workaround_bugs;
@@ -1330,6 +1327,59 @@ static int h264_export_frame_props(H264Context *h)
     }
     h->sei.unregistered.nb_buf_ref = 0;
 
+    if (h->sei.film_grain_characteristics.present &&
+        (h->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN)) {
+        H264SEIFilmGrainCharacteristics *fgc = &h->sei.film_grain_characteristics;
+        AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(out);
+        if (!fgp)
+            return AVERROR(ENOMEM);
+
+        fgp->type = AV_FILM_GRAIN_PARAMS_H274;
+
+        fgp->codec.h274.model_id = fgc->model_id;
+        if (fgc->separate_colour_description_present_flag) {
+            fgp->codec.h274.bit_depth_luma = fgc->bit_depth_luma;
+            fgp->codec.h274.bit_depth_chroma = fgc->bit_depth_chroma;
+            fgp->codec.h274.color_range = fgc->full_range + 1;
+            fgp->codec.h274.color_primaries = fgc->color_primaries;
+            fgp->codec.h274.color_trc = fgc->transfer_characteristics;
+            fgp->codec.h274.color_space = fgc->matrix_coeffs;
+        } else {
+            fgp->codec.h274.bit_depth_luma = sps->bit_depth_luma;
+            fgp->codec.h274.bit_depth_chroma = sps->bit_depth_chroma;
+            if (sps->video_signal_type_present_flag)
+                fgp->codec.h274.color_range = sps->full_range + 1;
+            else
+                fgp->codec.h274.color_range = AVCOL_RANGE_UNSPECIFIED;
+            if (sps->colour_description_present_flag) {
+                fgp->codec.h274.color_primaries = sps->color_primaries;
+                fgp->codec.h274.color_trc = sps->color_trc;
+                fgp->codec.h274.color_space = sps->colorspace;
+            } else {
+                fgp->codec.h274.color_primaries = AVCOL_PRI_UNSPECIFIED;
+                fgp->codec.h274.color_trc = AVCOL_TRC_UNSPECIFIED;
+                fgp->codec.h274.color_space = AVCOL_SPC_UNSPECIFIED;
+            }
+        }
+        fgp->codec.h274.blending_mode_id = fgc->blending_mode_id;
+        fgp->codec.h274.log2_scale_factor = fgc->log2_scale_factor;
+
+        memcpy(&fgp->codec.h274.component_model_present, &fgc->comp_model_present_flag,
+               sizeof(fgp->codec.h274.component_model_present));
+        memcpy(&fgp->codec.h274.num_intensity_intervals, &fgc->num_intensity_intervals,
+               sizeof(fgp->codec.h274.num_intensity_intervals));
+        memcpy(&fgp->codec.h274.num_model_values, &fgc->num_model_values,
+               sizeof(fgp->codec.h274.num_model_values));
+        memcpy(&fgp->codec.h274.intensity_interval_lower_bound, &fgc->intensity_interval_lower_bound,
+               sizeof(fgp->codec.h274.intensity_interval_lower_bound));
+        memcpy(&fgp->codec.h274.intensity_interval_upper_bound, &fgc->intensity_interval_upper_bound,
+               sizeof(fgp->codec.h274.intensity_interval_upper_bound));
+        memcpy(&fgp->codec.h274.comp_model_value, &fgc->comp_model_value,
+               sizeof(fgp->codec.h274.comp_model_value));
+
+        fgc->present = !!fgc->repetition_period;
+    }
+
     if (h->sei.picture_timing.timecode_cnt > 0) {
         uint32_t *tc_sd;
         char tcbuf[AV_TIMECODE_STR_SIZE];
@@ -1843,6 +1893,8 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
     if (nal->type == H264_NAL_IDR_SLICE)
         get_ue_golomb_long(&sl->gb); /* idr_pic_id */
 
+    sl->poc_lsb = 0;
+    sl->delta_poc_bottom = 0;
     if (sps->poc_type == 0) {
         sl->poc_lsb = get_bits(&sl->gb, sps->log2_max_poc_lsb);
 
@@ -1850,6 +1902,7 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
             sl->delta_poc_bottom = get_se_golomb(&sl->gb);
     }
 
+    sl->delta_poc[0] = sl->delta_poc[1] = 0;
     if (sps->poc_type == 1 && !sps->delta_pic_order_always_zero_flag) {
         sl->delta_poc[0] = get_se_golomb(&sl->gb);
 

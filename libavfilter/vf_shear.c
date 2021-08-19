@@ -114,10 +114,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 #define NN(type, name)                                                       \
@@ -246,7 +243,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                           0, 0, outlink->w, outlink->h);
 
     td.in = in, td.out = out;
-    ctx->internal->execute(ctx, s->filter_slice[s->interp], &td, NULL, FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->filter_slice[s->interp], &td, NULL,
+                      FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

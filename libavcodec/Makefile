@@ -12,6 +12,7 @@ HEADERS = ac3_parser.h                                                  \
           codec_id.h                                                    \
           codec_par.h                                                   \
           d3d11va.h                                                     \
+          defs.h                                                        \
           dirac.h                                                       \
           dv_profile.h                                                  \
           dxva2.h                                                       \
@@ -622,6 +623,7 @@ OBJS-$(CONFIG_SIMBIOSIS_IMX_DECODER)   += imx.o
 OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
 OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
 OBJS-$(CONFIG_SMC_DECODER)             += smc.o
+OBJS-$(CONFIG_SMC_ENCODER)             += smcenc.o
 OBJS-$(CONFIG_SNOW_DECODER)            += snowdec.o snow.o snow_dwt.o
 OBJS-$(CONFIG_SNOW_ENCODER)            += snowenc.o snow.o snow_dwt.o             \
                                           h263.o h263data.o ituh263enc.o
@@ -855,7 +857,7 @@ OBJS-$(CONFIG_ADPCM_AFC_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_AGM_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_AICA_DECODER)         += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_ARGO_DECODER)         += adpcm.o adpcm_data.o
-OBJS-$(CONFIG_ADPCM_ARGO_ENCODER)         += adpcm.o adpcmenc.o
+OBJS-$(CONFIG_ADPCM_ARGO_ENCODER)         += adpcm.o adpcm_data.o adpcmenc.o
 OBJS-$(CONFIG_ADPCM_CT_DECODER)           += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_DTK_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_EA_DECODER)           += adpcm.o adpcm_data.o
@@ -1182,7 +1184,6 @@ SLIBOBJS-$(HAVE_GNU_WINDRES)           += avcodecres.o
 
 SKIPHEADERS                            += %_tablegen.h                  \
                                           %_tables.h                    \
-                                          fft-internal.h                \
                                           tableprint.h                  \
                                           tableprint_vlc.h              \
                                           aaccoder_twoloop.h            \

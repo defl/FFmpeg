@@ -91,10 +91,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static uint32_t lerp_color(uint8_t c0[4], uint8_t c1[4], float x)
@@ -280,8 +277,8 @@ static int activate(AVFilterContext *ctx)
         frame->sample_aspect_ratio = (AVRational) {1, 1};
         frame->pts = s->pts++;
 
-        ctx->internal->execute(ctx, s->draw_slice, frame, NULL,
-                               FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, s->draw_slice, frame, NULL,
+                          FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
         return ff_filter_frame(outlink, frame);
     }

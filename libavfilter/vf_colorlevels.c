@@ -87,10 +87,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 typedef struct ThreadData {
@@ -289,8 +286,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         break;
     }
 
-    ctx->internal->execute(ctx, s->colorlevels_slice, &td, NULL,
-                           FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->colorlevels_slice, &td, NULL,
+                      FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (in != out)
         av_frame_free(&in);

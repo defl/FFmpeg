@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -1291,6 +1292,10 @@ static int generate_intervals(void *log, struct sbg_script *s, int sample_rate,
         ev1 = &s->events[i];
         ev2 = &s->events[(i + 1) % s->nb_events];
         ev1->ts_int   = ev1->ts;
+
+        if (!ev1->fade.slide && ev1 >= ev2 && ev2->ts > INT64_MAX - period)
+            return AVERROR_INVALIDDATA;
+
         ev1->ts_trans = ev1->fade.slide ? ev1->ts
                                         : ev2->ts + (ev1 < ev2 ? 0 : period);
     }
@@ -1444,7 +1449,7 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     st->duration      = script.end_ts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
                         av_rescale(script.end_ts - script.start_ts,
                                    sbg->sample_rate, AV_TIME_BASE);
-    st->cur_dts       = st->start_time;
+    st->internal->cur_dts       = st->start_time;
     r = encode_intervals(&script, st->codecpar, &inter);
     if (r < 0)
         goto fail;
@@ -1465,7 +1470,7 @@ static int sbg_read_packet(AVFormatContext *avf, AVPacket *packet)
     int64_t ts, end_ts;
     int ret;
 
-    ts = avf->streams[0]->cur_dts;
+    ts = avf->streams[0]->internal->cur_dts;
     end_ts = ts + avf->streams[0]->codecpar->frame_size;
     if (avf->streams[0]->duration != AV_NOPTS_VALUE)
         end_ts = FFMIN(avf->streams[0]->start_time + avf->streams[0]->duration,
@@ -1488,7 +1493,7 @@ static int sbg_read_seek2(AVFormatContext *avf, int stream_index,
         return AVERROR(EINVAL);
     if (stream_index < 0)
         ts = av_rescale_q(ts, AV_TIME_BASE_Q, avf->streams[0]->time_base);
-    avf->streams[0]->cur_dts = ts;
+    avf->streams[0]->internal->cur_dts = ts;
     return 0;
 }
 

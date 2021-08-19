@@ -1554,7 +1554,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFrameSideData *sd;
     int loop = 1;
 
-    if (s->text_source == AV_FRAME_DATA_DETECTION_BBOXES && sd) {
+    if (s->text_source == AV_FRAME_DATA_DETECTION_BBOXES) {
         sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
         if (sd) {
             header = (AVDetectionBBoxHeader *)sd->data;
@@ -1615,9 +1615,9 @@ static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame   = filter_frame,
         .config_props   = config_input,
-        .needs_writable = 1,
     },
     { NULL }
 };

@@ -97,9 +97,8 @@ static av_cold int init(AVFilterContext *ctx)
             s->map[i] = ret;
         }
 
-        if ((ret = ff_insert_outpad(ctx, i, &pad)) < 0) {
+        if ((ret = ff_append_outpad(ctx, &pad)) < 0)
             return ret;
-        }
     }
 
 fail:
@@ -113,7 +112,7 @@ static int query_formats(AVFilterContext *ctx)
     int i, ret;
 
     if ((ret = ff_set_common_formats(ctx, ff_planar_sample_fmts())) < 0 ||
-        (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
+        (ret = ff_set_common_all_samplerates(ctx)) < 0)
         return ret;
 
     if ((ret = ff_add_channel_layout(&in_layouts, s->channel_layout)) < 0 ||

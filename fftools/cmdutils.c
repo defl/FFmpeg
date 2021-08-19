@@ -41,6 +41,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/imgutils.h"
@@ -53,6 +54,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/ffversion.h"
 #include "libavutil/version.h"
+#include "libavcodec/bsf.h"
 #include "cmdutils.h"
 #if HAVE_SYS_RESOURCE_H
 #include <sys/time.h>
@@ -77,11 +79,6 @@ enum show_muxdemuxers {
     SHOW_DEMUXERS,
     SHOW_MUXERS,
 };
-
-void init_opts(void)
-{
-    av_dict_set(&sws_dict, "flags", "bicubic", 0);
-}
 
 void uninit_opts(void)
 {
@@ -667,7 +664,6 @@ static void finish_group(OptionParseContext *octx, int group_idx,
     resample_opts = NULL;
     sws_dict    = NULL;
     swr_opts    = NULL;
-    init_opts();
 
     memset(&octx->cur_group, 0, sizeof(octx->cur_group));
 }
@@ -705,8 +701,6 @@ static void init_parse_context(OptionParseContext *octx,
 
     octx->global_opts.group_def = &global_group;
     octx->global_opts.arg       = "";
-
-    init_opts();
 }
 
 void uninit_parse_context(OptionParseContext *octx)
@@ -853,6 +847,32 @@ int opt_cpuflags(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+int opt_cpucount(void *optctx, const char *opt, const char *arg)
+{
+    int ret;
+    int count;
+
+    static const AVOption opts[] = {
+        {"count", NULL, 0, AV_OPT_TYPE_INT, { .i64 = -1}, -1, INT_MAX, NULL},
+        {NULL},
+    };
+    static const AVClass class = {
+        .class_name = "cpucount",
+        .item_name  = av_default_item_name,
+        .option     = opts,
+        .version    = LIBAVUTIL_VERSION_INT,
+    };
+    const AVClass *pclass = &class;
+
+    ret = av_opt_eval_int(&pclass, opts, arg, &count);
+
+    if (!ret) {
+        av_cpu_force_count(count);
+    }
+
+    return ret;
+}
+
 int opt_loglevel(void *optctx, const char *opt, const char *arg)
 {
     const struct { const char *name; int level; } log_levels[] = {
@@ -883,20 +903,18 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
         if (!i && !cmd) {
             flags = 0;  /* missing relative prefix, build absolute value */
         }
-        if (!strncmp(token, "repeat", 6)) {
+        if (av_strstart(token, "repeat", &arg)) {
             if (cmd == '-') {
                 flags |= AV_LOG_SKIP_REPEATED;
             } else {
                 flags &= ~AV_LOG_SKIP_REPEATED;
             }
-            arg = token + 6;
-        } else if (!strncmp(token, "level", 5)) {
+        } else if (av_strstart(token, "level", &arg)) {
             if (cmd == '-') {
                 flags &= ~AV_LOG_PRINT_LEVEL;
             } else {
                 flags |= AV_LOG_PRINT_LEVEL;
             }
-            arg = token + 5;
         } else {
             break;
         }

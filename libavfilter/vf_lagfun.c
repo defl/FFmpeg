@@ -67,10 +67,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 typedef struct ThreadData {
@@ -176,7 +173,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.out = out;
     td.in = in;
-    ctx->internal->execute(ctx, s->lagfun, &td, NULL, FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->lagfun, &td, NULL,
+                      FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

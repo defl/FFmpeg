@@ -108,11 +108,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(s->coupling ? cpix_fmts : pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, s->coupling ? cpix_fmts : pix_fmts);
 }
 
 static float frand(int x, int y)
@@ -426,9 +422,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     td.in = in; td.out = out;
-    ctx->internal->execute(ctx, s->deband, &td, NULL, FFMIN3(s->planeheight[1],
-                                                             s->planeheight[2],
-                                                             ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->deband, &td, NULL,
+                      FFMIN3(s->planeheight[1], s->planeheight[2],
+                             ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);

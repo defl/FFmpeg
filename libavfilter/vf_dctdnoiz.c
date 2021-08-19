@@ -661,10 +661,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 typedef struct ThreadData {
@@ -748,7 +745,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             .src = s->cbuf[0][plane],
             .dst = s->cbuf[1][plane],
         };
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, s->nb_threads);
+        ff_filter_execute(ctx, filter_slice, &td, NULL, s->nb_threads);
     }
     s->color_correlation(out->data, out->linesize[0],
                          s->cbuf[1], s->p_linesize,

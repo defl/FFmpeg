@@ -87,7 +87,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static void maskedmin8(const uint8_t *src, uint8_t *dst, const uint8_t *f1, const uint8_t *f2, int w)
@@ -221,8 +221,8 @@ static int process_frame(FFFrameSync *fs)
         td.f2 = f2;
         td.dst = out;
 
-        ctx->internal->execute(ctx, maskedminmax_slice, &td, NULL, FFMIN(s->planeheight[0],
-                                                                   ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, maskedminmax_slice, &td, NULL,
+                          FFMIN(s->planeheight[0], ff_filter_get_nb_threads(ctx)));
     }
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 

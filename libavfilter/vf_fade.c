@@ -149,22 +149,20 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list;
+    const enum AVPixelFormat *pixel_fmts;
 
     if (s->alpha) {
         if (s->black_fade)
-            fmts_list = ff_make_format_list(pix_fmts_alpha);
+            pixel_fmts = pix_fmts_alpha;
         else
-            fmts_list = ff_make_format_list(pix_fmts_rgba);
+            pixel_fmts = pix_fmts_rgba;
     } else {
         if (s->black_fade)
-            fmts_list = ff_make_format_list(pix_fmts);
+            pixel_fmts = pix_fmts;
         else
-            fmts_list = ff_make_format_list(pix_fmts_rgb);
+            pixel_fmts = pix_fmts_rgb;
     }
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 const static enum AVPixelFormat studio_level_pix_fmts[] = {
@@ -495,20 +493,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     if (s->factor < UINT16_MAX) {
         if (s->alpha) {
-            ctx->internal->execute(ctx, s->filter_slice_alpha, frame, NULL,
-                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, s->filter_slice_alpha, frame, NULL,
+                              FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else if (s->is_rgb && !s->black_fade) {
-            ctx->internal->execute(ctx, filter_slice_rgb, frame, NULL,
-                                   FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, filter_slice_rgb, frame, NULL,
+                              FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else {
             /* luma, or rgb plane in case of black */
-            ctx->internal->execute(ctx, s->filter_slice_luma, frame, NULL,
-                                FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+            ff_filter_execute(ctx, s->filter_slice_luma, frame, NULL,
+                              FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
             if (frame->data[1] && frame->data[2] && !s->is_rgb) {
                 /* chroma planes */
-                ctx->internal->execute(ctx, s->filter_slice_chroma, frame, NULL,
-                                    FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+                ff_filter_execute(ctx, s->filter_slice_chroma, frame, NULL,
+                                  FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
             }
         }
     }
@@ -553,9 +551,9 @@ static const AVFilterPad avfilter_vf_fade_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .config_props   = config_input,
         .filter_frame   = filter_frame,
-        .needs_writable = 1,
     },
     { NULL }
 };

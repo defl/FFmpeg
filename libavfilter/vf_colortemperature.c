@@ -270,8 +270,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     kelvin2rgb(s->temperature, s->color);
 
-    ctx->internal->execute(ctx, s->do_slice, frame, NULL,
-                           FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, s->do_slice, frame, NULL,
+                      FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(ctx->outputs[0], frame);
 }
@@ -293,13 +293,7 @@ static av_cold int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *formats = NULL;
-
-    formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 static av_cold int config_input(AVFilterLink *inlink)
@@ -330,9 +324,9 @@ static const AVFilterPad inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_VIDEO,
+        .flags          = AVFILTERPAD_FLAG_NEEDS_WRITABLE,
         .filter_frame   = filter_frame,
         .config_props   = config_input,
-        .needs_writable = 1,
     },
     { NULL }
 };

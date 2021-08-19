@@ -28,7 +28,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -280,7 +279,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         td.h     = h;
         td.plane = i;
 
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, filter_slice, &td, NULL,
+                          FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
     if (yadif->current_field == YADIF_FIELD_END) {
         yadif->current_field = YADIF_FIELD_NORMAL;
@@ -322,11 +322,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int config_props(AVFilterLink *link)

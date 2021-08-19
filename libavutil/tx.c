@@ -38,6 +38,7 @@ static av_always_inline int mulinv(int n, int m)
         if (((n * x) % m) == 1)
             return x;
     av_assert0(0); /* Never reached */
+    return 0;
 }
 
 /* Guaranteed to work for any n, m where gcd(n, m) == 1 */
@@ -97,9 +98,9 @@ static inline int split_radix_permutation(int i, int m, int inverse)
     if (m <= 1)
         return i & 1;
     if (!(i & m))
-        return (split_radix_permutation(i, m, inverse) << 1);
+        return split_radix_permutation(i, m, inverse) * 2;
     m >>= 1;
-    return (split_radix_permutation(i, m, inverse) << 2) + 1 - 2*(!(i & m) ^ inverse);
+    return split_radix_permutation(i, m, inverse) * 4 + 1 - 2*(!(i & m) ^ inverse);
 }
 
 int ff_tx_gen_ptwo_revtab(AVTXContext *s, int invert_lookup)

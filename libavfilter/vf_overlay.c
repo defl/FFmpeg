@@ -255,7 +255,7 @@ static int query_formats(AVFilterContext *ctx)
         overlay_formats = overlay_pix_fmts_gbrp;
         break;
     case OVERLAY_FORMAT_AUTO:
-        return ff_set_common_formats(ctx, ff_make_format_list(alpha_pix_fmts));
+        return ff_set_common_formats_from_list(ctx, alpha_pix_fmts);
     default:
         av_assert0(0);
     }
@@ -1029,8 +1029,8 @@ static int do_blend(FFFrameSync *fs)
 
         td.dst = mainpic;
         td.src = second;
-        ctx->internal->execute(ctx, s->blend_slice, &td, NULL, FFMIN(FFMAX(1, FFMIN3(s->y + second->height, FFMIN(second->height, mainpic->height), mainpic->height - s->y)),
-                                                                     ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, s->blend_slice, &td, NULL, FFMIN(FFMAX(1, FFMIN3(s->y + second->height, FFMIN(second->height, mainpic->height), mainpic->height - s->y)),
+                                                                ff_filter_get_nb_threads(ctx)));
     }
     return ff_filter_frame(ctx->outputs[0], mainpic);
 }

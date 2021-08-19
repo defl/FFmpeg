@@ -98,10 +98,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -191,8 +188,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     BlackDetectContext *s = ctx->priv;
     double picture_black_ratio = 0;
 
-    ctx->internal->execute(ctx, black_counter, picref, NULL,
-                           FFMIN(inlink->h, s->nb_threads));
+    ff_filter_execute(ctx, black_counter, picref, NULL,
+                      FFMIN(inlink->h, s->nb_threads));
 
     for (int i = 0; i < s->nb_threads; i++)
         s->nb_black_pixels += s->counter[i];

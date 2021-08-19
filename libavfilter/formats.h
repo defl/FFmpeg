@@ -20,7 +20,6 @@
 #define AVFILTER_FORMATS_H
 
 #include "avfilter.h"
-#include "version.h"
 
 /**
  * A list of supported formats for one end of a filter link. This is used
@@ -70,6 +69,21 @@ struct AVFilterFormats {
     struct AVFilterFormats ***refs; ///< references to this list
 };
 
+typedef struct AVFilterFormatMerger {
+    unsigned offset;
+    int (*merge)(void *a, void *b);
+    int (*can_merge)(const void *a, const void *b);
+} AVFilterFormatsMerger;
+
+typedef struct AVFilterNegotiation {
+    unsigned nb;
+    const AVFilterFormatsMerger *mergers;
+    const char *conversion_filter;
+    unsigned conversion_opts_offset;
+} AVFilterNegotiation;
+
+const AVFilterNegotiation *ff_filter_get_negotiation(AVFilterLink *link);
+
 /**
  * A list of supported channel layouts.
  *
@@ -110,34 +124,6 @@ struct AVFilterChannelLayouts {
                            (int)((l) & 0x7FFFFFFF) : 0)
 
 /**
- * Check the formats/samplerates lists for compatibility for merging
- * without actually merging.
- *
- * @return 1 if they are compatible, 0 if not.
- */
-int ff_can_merge_formats(const AVFilterFormats *a, const AVFilterFormats *b,
-                         enum AVMediaType type);
-int ff_can_merge_samplerates(const AVFilterFormats *a, const AVFilterFormats *b);
-
-/**
- * Merge the formats/channel layouts/samplerates lists if they are compatible
- * and update all the references of a and b to point to the combined list and
- * free the old lists as needed. The combined list usually contains the
- * intersection of the lists of a and b.
- *
- * Both a and b must have owners (i.e. refcount > 0) for these functions.
- *
- * @return 1 if merging succeeded, 0 if a and b are incompatible
- *         and negative AVERROR code on failure.
- *         a and b are unmodified if 0 is returned.
- */
-int ff_merge_channel_layouts(AVFilterChannelLayouts *a,
-                             AVFilterChannelLayouts *b);
-int ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
-                     enum AVMediaType type);
-int ff_merge_samplerates(AVFilterFormats *a, AVFilterFormats *b);
-
-/**
  * Construct an empty AVFilterChannelLayouts/AVFilterFormats struct --
  * representing any channel layout (with known disposition)/sample rate.
  */
@@ -165,9 +151,32 @@ AVFilterChannelLayouts *ff_make_format64_list(const int64_t *fmts);
 av_warn_unused_result
 int ff_set_common_channel_layouts(AVFilterContext *ctx,
                                   AVFilterChannelLayouts *layouts);
+/**
+ * Equivalent to ff_set_common_channel_layouts(ctx, ff_make_format64_list(fmts))
+ */
+av_warn_unused_result
+int ff_set_common_channel_layouts_from_list(AVFilterContext *ctx,
+                                            const int64_t *fmts);
+/**
+ * Equivalent to ff_set_common_channel_layouts(ctx, ff_all_channel_counts())
+ */
+av_warn_unused_result
+int ff_set_common_all_channel_counts(AVFilterContext *ctx);
+
 av_warn_unused_result
 int ff_set_common_samplerates(AVFilterContext *ctx,
                               AVFilterFormats *samplerates);
+/**
+ * Equivalent to ff_set_common_samplerates(ctx, ff_make_format_list(samplerates))
+ */
+av_warn_unused_result
+int ff_set_common_samplerates_from_list(AVFilterContext *ctx,
+                                        const int *samplerates);
+/**
+ * Equivalent to ff_set_common_samplerates(ctx, ff_all_samplerates())
+ */
+av_warn_unused_result
+int ff_set_common_all_samplerates(AVFilterContext *ctx);
 
 /**
  * A helper for query_formats() which sets all links to the same list of
@@ -176,6 +185,12 @@ int ff_set_common_samplerates(AVFilterContext *ctx,
  */
 av_warn_unused_result
 int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+
+/**
+ * Equivalent to ff_set_common_formats(ctx, ff_make_format_list(fmts))
+ */
+av_warn_unused_result
+int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts);
 
 av_warn_unused_result
 int ff_add_channel_layout(AVFilterChannelLayouts **l, uint64_t channel_layout);

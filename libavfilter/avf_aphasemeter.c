@@ -23,7 +23,6 @@
  * audio to video multimedia aphasemeter filter
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -132,7 +131,6 @@ static int config_input(AVFilterLink *inlink)
 
     if (s->do_video) {
         nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
-        inlink->partial_buf_size =
         inlink->min_samples =
         inlink->max_samples = nb_samples;
     }
@@ -357,7 +355,7 @@ static av_cold int init(AVFilterContext *ctx)
         .name         = "out0",
         .type         = AVMEDIA_TYPE_AUDIO,
     };
-    ret = ff_insert_outpad(ctx, 0, &pad);
+    ret = ff_append_outpad(ctx, &pad);
     if (ret < 0)
         return ret;
 
@@ -367,7 +365,7 @@ static av_cold int init(AVFilterContext *ctx)
             .type         = AVMEDIA_TYPE_VIDEO,
             .config_props = config_video_output,
         };
-        ret = ff_insert_outpad(ctx, 1, &pad);
+        ret = ff_append_outpad(ctx, &pad);
         if (ret < 0)
             return ret;
     }

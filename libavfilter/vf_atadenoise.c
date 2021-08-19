@@ -120,10 +120,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRAP,     AV_PIX_FMT_GBRAP10,    AV_PIX_FMT_GBRAP12,    AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *formats = ff_make_format_list(pixel_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, formats);
+    return ff_set_common_formats_from_list(ctx, pixel_fmts);
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -491,7 +488,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         }
 
         td.in = in; td.out = out;
-        ctx->internal->execute(ctx, s->filter_slice, &td, NULL,
+        ff_filter_execute(ctx, s->filter_slice, &td, NULL,
                                FFMIN3(s->planeheight[1],
                                       s->planeheight[2],
                                       ff_filter_get_nb_threads(ctx)));

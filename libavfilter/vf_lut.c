@@ -150,10 +150,7 @@ static int query_formats(AVFilterContext *ctx)
     const enum AVPixelFormat *pix_fmts = s->is_rgb ? rgb_pix_fmts :
                                                      s->is_yuv ? yuv_pix_fmts :
                                                                  all_pix_fmts;
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 /**
@@ -541,23 +538,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->is_rgb && s->is_16bit && !s->is_planar) {
         /* packed, 16-bit */
         PACKED_THREAD_DATA
-        ctx->internal->execute(ctx, lut_packed_16bits, &td, NULL,
-                               FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, lut_packed_16bits, &td, NULL,
+                          FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
     } else if (s->is_rgb && !s->is_planar) {
         /* packed 8 bits */
         PACKED_THREAD_DATA
-        ctx->internal->execute(ctx, lut_packed_8bits, &td, NULL,
-                               FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, lut_packed_8bits, &td, NULL,
+                          FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
     } else if (s->is_16bit) {
         /* planar >8 bit depth */
         PLANAR_THREAD_DATA
-        ctx->internal->execute(ctx, lut_planar_16bits, &td, NULL,
-                               FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, lut_planar_16bits, &td, NULL,
+                          FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
     } else {
         /* planar 8bit depth */
         PLANAR_THREAD_DATA
-        ctx->internal->execute(ctx, lut_planar_8bits, &td, NULL,
-                               FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+        ff_filter_execute(ctx, lut_planar_8bits, &td, NULL,
+                          FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
     }
 
     if (!direct)

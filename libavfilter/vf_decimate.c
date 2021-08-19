@@ -310,13 +310,13 @@ static av_cold int decimate_init(AVFilterContext *ctx)
     };
     int ret;
 
-    if ((ret = ff_insert_inpad(ctx, INPUT_MAIN, &pad)) < 0)
+    if ((ret = ff_append_inpad(ctx, &pad)) < 0)
         return ret;
 
     if (dm->ppsrc) {
         pad.name = "clean_src";
         pad.config_props = NULL;
-        if ((ret = ff_insert_inpad(ctx, INPUT_CLEANSRC, &pad)) < 0)
+        if ((ret = ff_append_inpad(ctx, &pad)) < 0)
             return ret;
     }
 
@@ -365,10 +365,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static int config_output(AVFilterLink *outlink)

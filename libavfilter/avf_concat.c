@@ -23,7 +23,6 @@
  * concat audio-video filter
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
@@ -314,11 +313,13 @@ static av_cold int init(AVFilterContext *ctx)
             for (str = 0; str < cat->nb_streams[type]; str++) {
                 AVFilterPad pad = {
                     .type             = type,
-                    .get_video_buffer = get_video_buffer,
-                    .get_audio_buffer = get_audio_buffer,
                 };
+                if (type == AVMEDIA_TYPE_VIDEO)
+                    pad.get_buffer.video = get_video_buffer;
+                else
+                    pad.get_buffer.audio = get_audio_buffer;
                 pad.name = av_asprintf("in%d:%c%d", seg, "va"[type], str);
-                if ((ret = ff_insert_inpad(ctx, ctx->nb_inputs, &pad)) < 0) {
+                if ((ret = ff_append_inpad(ctx, &pad)) < 0) {
                     av_freep(&pad.name);
                     return ret;
                 }
@@ -333,7 +334,7 @@ static av_cold int init(AVFilterContext *ctx)
                 .config_props  = config_output,
             };
             pad.name = av_asprintf("out:%c%d", "va"[type], str);
-            if ((ret = ff_insert_outpad(ctx, ctx->nb_outputs, &pad)) < 0) {
+            if ((ret = ff_append_outpad(ctx, &pad)) < 0) {
                 av_freep(&pad.name);
                 return ret;
             }
@@ -398,12 +399,17 @@ static int activate(AVFilterContext *ctx)
     /* Forward status change */
     if (cat->cur_idx < ctx->nb_inputs) {
         for (i = 0; i < ctx->nb_outputs; i++) {
-            ret = ff_inlink_acknowledge_status(ctx->inputs[cat->cur_idx + i], &status, &pts);
+            AVFilterLink *inlink = ctx->inputs[cat->cur_idx + i];
+
+            ret = ff_inlink_acknowledge_status(inlink, &status, &pts);
             /* TODO use pts */
             if (ret > 0) {
                 close_input(ctx, cat->cur_idx + i);
                 if (cat->cur_idx + ctx->nb_outputs >= ctx->nb_inputs) {
-                    ff_outlink_set_status(ctx->outputs[i], status, pts);
+                    int64_t eof_pts = cat->delta_ts;
+
+                    eof_pts += av_rescale_q(pts, inlink->time_base, ctx->outputs[i]->time_base);
+                    ff_outlink_set_status(ctx->outputs[i], status, eof_pts);
                 }
                 if (!cat->nb_in_active) {
                     ret = flush_segment(ctx);

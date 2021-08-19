@@ -79,7 +79,7 @@ static const enum AVPixelFormat pix_fmts[] = {
 
 static int query_formats(AVFilterContext *ctx)
 {
-    return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return ff_set_common_formats_from_list(ctx, pix_fmts);
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -275,7 +275,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     td.in = in;
     td.desc = desc;
     td.peak = peak;
-    ctx->internal->execute(ctx, tonemap_slice, &td, NULL, FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
+    ff_filter_execute(ctx, tonemap_slice, &td, NULL,
+                      FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
 
     /* copy/generate alpha if needed */
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA && odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {

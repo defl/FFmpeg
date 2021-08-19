@@ -28,19 +28,11 @@
 
 #define AC3ENC_FLOAT 0
 #define FFT_FLOAT 0
-#define FFT_FIXED_32 1
 #include "internal.h"
 #include "audiodsp.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 #include "kbdwin.h"
-
-static const AVClass ac3enc_class = {
-    .class_name = "Fixed-Point AC-3 Encoder",
-    .item_name  = av_default_item_name,
-    .option     = ff_ac3_enc_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
 
 static void sum_square_butterfly(AC3EncodeContext *s, int64_t sum[4],
                                  const int32_t *coef0, const int32_t *coef1,
@@ -139,7 +131,7 @@ const AVCodec ff_ac3_fixed_encoder = {
     .close           = ff_ac3_encode_close,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },
-    .priv_class      = &ac3enc_class,
+    .priv_class      = &ff_ac3enc_class,
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .supported_samplerates = ff_ac3_sample_rate_tab,
     .channel_layouts = ff_ac3_channel_layouts,

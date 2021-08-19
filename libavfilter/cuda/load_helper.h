@@ -1,7 +1,4 @@
 /*
- * Copyright (c) 2017 Ronald S. Bultje <rsbultje@gmail.com>
- * Copyright (c) 2017 Ashish Pratap Singh <ashk43712@gmail.com>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -19,14 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_VIF_H
-#define AVFILTER_VIF_H
+#ifndef AVFILTER_CUDA_LOAD_HELPER_H
+#define AVFILTER_CUDA_LOAD_HELPER_H
 
-#include "avfilter.h"
+/**
+ * Loads a CUDA module and applies any decompression, if neccesary.
+ */
+int ff_cuda_load_module(void *avctx, AVCUDADeviceContext *hwctx, CUmodule *cu_module,
+                        const unsigned char *data, const unsigned int length);
 
-int ff_compute_vif2(AVFilterContext *ctx,
-                    const float *ref, const float *main, int w, int h,
-                    int ref_stride, int main_stride, float *score,
-                    float *data_buf[13], float **temp, int nb_threads);
-
-#endif /* AVFILTER_VIF_H */
+#endif /* AVFILTER_CUDA_LOAD_HELPER_H */
